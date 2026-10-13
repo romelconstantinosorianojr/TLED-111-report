@@ -1,0 +1,770 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medical Transcription | Interactive Presentation</title>
+<style>
+:root {
+  --navy:#07152f;
+  --blue:#123f78;
+  --cyan:#59f2f0;
+  --purple:#a98cff;
+  --white:#f4f8ff;
+  --muted:#bacbe3;
+  --panel:rgba(20,43,82,.83);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; overflow:hidden;
+  background:radial-gradient(ellipse at 50% 0%,#193d71 0%,#08152f 55%,#030916 100%);
+  color:var(--white);font-family:Arial,Helvetica,sans-serif;
+}
+body:before,body:after{
+  content:"";position:fixed;width:240px;height:240px;border-radius:50%;
+  filter:blur(100px);opacity:.38;pointer-events:none;z-index:0;
+  animation:glow 7s ease-in-out infinite alternate;
+}
+body:before{background:#00d9ff;top:-100px;left:-80px}
+body:after{background:#8458ff;right:-90px;bottom:-100px;animation-delay:-3s}
+@keyframes glow{to{transform:translate(55px,45px) scale(1.3);opacity:.7}}
+*{scrollbar-width:thin;scrollbar-color:#4de7f1 #102347}
+button,textarea{font:inherit}
+button{cursor:pointer}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
+.topbar{
+ position:fixed;z-index:20;left:0;right:0;top:0;height:58px;
+ display:flex;align-items:center;justify-content:space-between;padding:0 4%;
+ background:rgba(3,12,29,.8);border-bottom:1px solid #56e7f344;
+ backdrop-filter:blur(15px)
+}
+.brand{font-size:13px;letter-spacing:2px;font-weight:800}
+.brand span{color:var(--cyan)}
+.tools{display:flex;gap:7px;align-items:center}
+.tool,.navbtn{
+ color:white;background:#17355c;border:1px solid #6be6f055;
+ padding:9px 12px;border-radius:10px;font-size:12px
+}
+.tool:hover,.navbtn:hover{background:#285486}
+#progress{height:3px;position:fixed;top:58px;left:0;z-index:30;background:var(--cyan);width:11%;transition:width .4s}
+#slides{position:relative;z-index:1;height:100vh}
+.slide{
+ position:absolute;inset:64px 0 65px;padding:20px 5% 25px;
+ display:none;align-items:center;justify-content:center;overflow:auto;
+ animation:enter .55s ease both
+}
+.slide.active{display:flex}
+@keyframes enter{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.layout{width:min(1180px,100%);display:grid;grid-template-columns:1.12fr .88fr;gap:35px;align-items:center}
+.single{width:min(1000px,100%)}
+.kicker{color:var(--cyan);font-size:12px;font-weight:bold;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px}
+h1{font-size:clamp(38px,5.6vw,72px);line-height:1.02;margin:0 0 18px;letter-spacing:-2px}
+h2{font-size:clamp(29px,3.8vw,46px);line-height:1.1;margin:0 0 20px}
+h3{margin:0 0 10px;font-size:18px}
+p,li{font-size:clamp(14px,1.4vw,17px);line-height:1.6;color:var(--muted)}
+p{margin:10px 0}
+ul{padding-left:22px}
+li{margin:8px 0}
+.gradient{background:linear-gradient(100deg,#fff 15%,#63f1ee 65%,#bca3ff);color:transparent;background-clip:text}
+.panel{
+ padding:22px;border-radius:20px;background:var(--panel);
+ border:1px solid #66dce955;box-shadow:0 18px 50px #0003;
+ backdrop-filter:blur(14px)
+}
+.cardgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mini{padding:16px;border:1px solid #75dfe333;background:#ffffff08;border-radius:15px}
+.mini .emoji{font-size:25px;display:block;margin-bottom:9px}
+.mini strong{display:block;margin-bottom:6px}
+.mini p{font-size:13px;margin:0}
+.tag{display:inline-block;border-radius:20px;padding:7px 11px;background:#43ecee19;border:1px solid #54eeec66;color:var(--cyan);font-size:12px;margin:4px}
+.scene{
+ min-height:300px;position:relative;display:flex;align-items:center;justify-content:center;
+ border-radius:26px;overflow:hidden;
+ background:radial-gradient(ellipse at 50% 65%,#1b619455,transparent 60%),linear-gradient(145deg,#18365eaa,#0b1730dd);
+ border:1px solid #76eaf044;
+}
+.scene:before{
+ content:"";position:absolute;inset:0;opacity:.3;
+ background-image:linear-gradient(#74dff012 1px,transparent 1px),linear-gradient(90deg,#74dff012 1px,transparent 1px);
+ background-size:25px 25px;mask-image:linear-gradient(transparent,#000)
+}
+.person{width:100%;max-width:330px;position:relative;z-index:1;overflow:visible}
+.floaticon{position:absolute;font-size:30px;animation:float 3s ease-in-out infinite}
+.f1{top:13%;left:12%}.f2{top:18%;right:12%;animation-delay:-1s}.f3{bottom:18%;left:14%;animation-delay:-2s}
+@keyframes float{50%{transform:translateY(-13px) rotate(5deg)}}
+.person .bodymove{transform-origin:160px 250px;animation:body 3s ease-in-out infinite}
+.person .headmove{transform-origin:160px 104px;animation:head 4s ease-in-out infinite}
+@keyframes body{50%{transform:translateY(-4px)}}
+@keyframes head{50%{transform:rotate(2deg) translateY(-2px)}}
+.eye{animation:blink 4.5s infinite;transform-origin:center}
+@keyframes blink{0%,45%,49%,100%{transform:scaleY(1)}47%{transform:scaleY(.1)}}
+.mouth{transform-origin:center;animation:talk .24s infinite alternate}
+@keyframes talk{from{transform:scaleY(.35)}to{transform:scaleY(1)}}
+.person.silent .mouth{animation:none;transform:scaleY(.4)}
+.speech{
+ position:absolute;bottom:14px;left:12px;right:12px;text-align:center;z-index:4;
+ background:#f2f8ff;color:#132745;border-radius:14px;padding:11px 14px;
+ font-size:13px;font-weight:bold;box-shadow:0 5px 20px #0004
+}
+.speech:after{content:"";position:absolute;top:-8px;left:50%;border-width:0 8px 8px;border-style:solid;border-color:transparent transparent #f2f8ff}
+.process{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:20px}
+.step{text-align:center;padding:14px 8px;border-radius:14px;background:#ffffff09;border:1px solid #6de8f333}
+.step b{display:block;color:var(--cyan);font-size:12px;margin-bottom:8px}
+.step span{font-size:26px;display:block;margin-bottom:8px}
+.step small{color:var(--muted);line-height:1.4}
+.casequote{font-size:clamp(18px,2.3vw,25px);line-height:1.45;color:#fff}
+.answer{display:none;margin-top:12px;padding:12px;background:#34e6bc15;border-radius:12px;border:1px solid #43edbd55}
+.answer.show{display:block}
+.quiz button.choice{
+ display:block;text-align:left;width:100%;margin:8px 0;padding:12px 14px;border-radius:11px;
+ color:white;background:#102a4d;border:1px solid #70dbe644
+}
+.quiz button.choice:hover{background:#204b76}
+.quiz button.choice.correct{border-color:#39efb1;background:#0d513e}
+.quiz button.choice.wrong{border-color:#ff8297;background:#632b42}
+.feedback{min-height:28px;color:var(--cyan);font-weight:bold;font-size:14px;margin-top:8px}
+textarea{
+ width:100%;min-height:105px;background:#06142a;color:white;border:1px solid #65dfe877;
+ border-radius:12px;padding:13px;resize:vertical;line-height:1.5
+}
+.footer{
+ position:fixed;z-index:20;bottom:0;left:0;right:0;height:58px;padding:0 4%;
+ display:flex;align-items:center;justify-content:space-between;
+ background:#040d20dd;border-top:1px solid #62e9f033;backdrop-filter:blur(12px)
+}
+.navcenter{display:flex;gap:10px;align-items:center}
+#counter{font-size:12px;color:#b9cbe5;min-width:70px;text-align:center}
+.smallnote{font-size:12px!important;color:#92abc9!important}
+.xray .scene{filter:hue-rotate(115deg) saturate(.7) brightness(1.5)}
+.xray .person{filter:drop-shadow(0 0 8px cyan)}
+.xray .scene:after{
+ content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+ background:linear-gradient(transparent,#6af8ff66,transparent);
+ animation:scan 2s linear infinite
+}
+@keyframes scan{from{transform:translateY(-100%)}to{transform:translateY(100%)}}
+.xray .panel{border-color:#5dfaffaa}
+@media(max-width:760px){
+ .topbar{padding:0 12px;height:53px}.brand{font-size:10px;letter-spacing:1px}
+ .tool{padding:8px;font-size:10px}.tools{gap:4px}
+ #progress{top:53px}.slide{inset:58px 0 60px;padding:15px 5%;align-items:flex-start}
+ .layout{grid-template-columns:1fr;gap:15px}
+ .scene{min-height:205px;max-height:235px}
+ .person{max-width:205px}
+ .speech{font-size:11px;bottom:7px}
+ h1{font-size:43px}h2{font-size:29px}
+ .panel{padding:15px}.mini{padding:12px}
+ .footer{height:54px;padding:0 10px}.navbtn{padding:9px}
+ .process{grid-template-columns:repeat(2,1fr)}
+ .slide{padding-top:17px}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">MED<span>●</span>TRANSCRIPT <span style="color:#9baed0;font-weight:400">/ LEARNING STUDIO</span></div>
+  <div class="tools">
+    <button class="tool" id="voiceBtn" onclick="toggleVoice()">🔊 Voice</button>
+    <button class="tool" onclick="toggleXray()">🩻 X-Ray</button>
+    <button class="tool" onclick="toggleMute()" id="muteBtn">🔔 Sound</button>
+    <button class="tool" onclick="toggleFullscreen()" id="fullBtn">⛶ Fullscreen</button>
+  </div>
+</header>
+<div id="progress"></div>
+
+<main id="slides">
+
+<!-- 1 INTRODUCTION -->
+<section class="slide active" data-title="Introduction" data-speech="Welcome to Medical Transcription. We will explore how spoken medical information becomes clear and accurate written documentation.">
+ <div class="layout">
+  <div>
+   <div class="kicker">Lesson 1 · Introduction</div>
+   <h1><span class="gradient">Medical<br>Transcription</span></h1>
+   <p>Turning spoken medical information into clear, accurate written records.</p>
+   <div class="tag">Accuracy</div><div class="tag">Healthcare</div><div class="tag">Documentation</div>
+  </div>
+  <div class="scene" data-character="doctor">
+   <span class="floaticon f1">✚</span><span class="floaticon f2">🎧</span><span class="floaticon f3">⌨️</span>
+   <svg class="person" viewBox="0 0 320 300" role="img" aria-label="Animated medical transcriptionist at a computer">
+    <ellipse cx="160" cy="267" rx="108" ry="13" fill="#030b19" opacity=".5"/>
+    <g class="bodymove">
+     <path d="M94 273 L103 190 Q112 160 160 158 Q208 160 217 190 L226 273Z" fill="#f0f7ff"/>
+     <path d="M103 195 L79 240 L96 250 L122 211" fill="#d1e6f6"/>
+     <path d="M217 195 L241 239 L224 250 L198 211" fill="#d1e6f6"/>
+     <path d="M143 164 L160 184 L177 164" fill="#58e9e8"/>
+     <path d="M144 163 L160 184 L154 211 L139 170Z" fill="#5279bd"/>
+     <path d="M176 163 L160 184 L166 211 L181 170Z" fill="#5279bd"/>
+     <path d="M111 239 Q160 223 209 239 L211 269 L109 269Z" fill="#173d71"/>
+     <rect x="122" y="232" width="76" height="7" rx="3" fill="#63eeeb"/>
+     <path d="M132 245 L150 245 M132 252 L172 252" stroke="#9ec9ed" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <g class="headmove">
+     <path d="M126 102 Q113 58 160 52 Q207 58 194 102 L188 133 Q160 163 132 133Z" fill="#9c633f"/>
+     <ellipse cx="160" cy="105" rx="35" ry="42" fill="#d99c72"/>
+     <path d="M125 94 Q119 54 159 52 Q198 52 196 91 L184 78 L174 70 Q153 88 126 82Z" fill="#30243a"/>
+     <path d="M126 101 Q114 87 119 114 L130 121" fill="#d99c72"/>
+     <path d="M194 101 Q206 87 201 114 L190 121" fill="#d99c72"/>
+     <g class="eye"><ellipse cx="147" cy="105" rx="3" ry="4" fill="#17213b"/><ellipse cx="174" cy="105" rx="3" ry="4" fill="#17213b"/></g>
+     <path d="M152 124 Q160 129 168 124" stroke="#8b493f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+     <path d="M123 91 Q110 90 113 109 L119 120" fill="none" stroke="#62f5f2" stroke-width="5" stroke-linecap="round"/>
+     <path d="M119 109 L106 119 L120 125" fill="none" stroke="#62f5f2" stroke-width="4" stroke-linecap="round"/>
+     <path class="mouth" d="M151 133 Q160 137 169 133 Q160 147 151 133" fill="#7e303b"/>
+    </g>
+    <rect x="49" y="222" width="76" height="46" rx="6" fill="#152d52" stroke="#64efed" stroke-width="2"/>
+    <rect x="55" y="228" width="64" height="32" rx="3" fill="#0b1b32"/>
+    <path d="M61 235 L111 235 M61 242 L100 242 M61 249 L106 249" stroke="#63f3ec" stroke-width="2" stroke-linecap="round"/>
+    <path d="M87 268 L87 278 L72 281 L105 281" fill="none" stroke="#b6d9f4" stroke-width="4"/>
+    <rect x="197" y="240" width="76" height="28" rx="6" fill="#14294a" stroke="#5fe6ee" stroke-width="2"/>
+    <path d="M206 248 L264 248 M206 255 L264 255 M214 262 L256 262" stroke="#6a9cce" stroke-width="2"/>
+   </svg>
+   <div class="speech">“I turn spoken medical information into written records.”</div>
+  </div>
+ </div>
+</section>
+
+<!-- 2 LEARNING OUTCOMES -->
+<section class="slide" data-title="Learning Outcomes" data-speech="By the end of this lecture, students should be able to define medical transcription and explain its scope, recognize its role in healthcare documentation, and understand the consequences of errors through a case study.">
+ <div class="layout">
+  <div>
+   <div class="kicker">01 · Learning Outcomes</div>
+   <h2>By the end of this lecture, students should be able to:</h2>
+   <div class="panel">
+    <p>🎯 <strong>Define</strong> medical transcription and explain its scope.</p>
+    <p>🩺 <strong>Recognize</strong> its role in healthcare documentation.</p>
+    <p>🔎 <strong>Understand</strong> the consequences of errors through a case study.</p>
+   </div>
+  </div>
+  <div class="scene" data-character="nurse">
+   <span class="floaticon f1">🎯</span><span class="floaticon f2">📋</span>
+   <svg class="person" viewBox="0 0 320 300" role="img" aria-label="Animated healthcare professional reviewing lesson goals">
+    <ellipse cx="160" cy="269" rx="90" ry="12" fill="#030b19" opacity=".5"/>
+    <g class="bodymove">
+     <path d="M94 272 L104 184 Q120 157 160 158 Q200 157 216 184 L226 272Z" fill="#f1f8ff"/>
+     <path d="M143 164 L160 185 L177 164 L170 211 L150 211Z" fill="#4de6e4"/>
+     <path d="M104 193 L81 231 L96 243 L126 205" fill="#d8eaff"/>
+     <path d="M216 193 L237 226 L223 241 L195 205" fill="#d8eaff"/>
+     <rect x="125" y="220" width="70" height="48" rx="5" fill="#173b6b"/>
+     <path d="M138 232 L181 232 M138 241 L176 241 M138 250 L183 250" stroke="#68e7eb" stroke-width="3" stroke-linecap="round"/>
+     <path d="M157 184 L157 201 L165 201 L165 184" fill="#fff"/>
+    </g>
+    <g class="headmove">
+     <path d="M127 100 Q120 60 160 54 Q200 60 193 100 L188 132 Q160 160 132 132Z" fill="#5d392c"/>
+     <ellipse cx="160" cy="105" rx="34" ry="42" fill="#c98b67"/>
+     <path d="M126 93 Q122 58 160 54 Q197 57 194 91 L181 75 Q155 86 128 81Z" fill="#28213a"/>
+     <g class="eye"><ellipse cx="147" cy="104" rx="3" ry="4" fill="#17213b"/><ellipse cx="173" cy="104" rx="3" ry="4" fill="#17213b"/></g>
+     <path d="M151 124 Q160 130 169 124" stroke="#88463b" stroke-width="2" fill="none"/>
+     <path class="mouth" d="M151 133 Q160 137 169 133 Q160 147 151 133" fill="#7e303b"/>
+     <path d="M130 77 Q160 49 190 77" fill="none" stroke="#a7faff" stroke-width="5" stroke-linecap="round"/>
+     <rect x="155" y="43" width="10" height="20" rx="4" fill="#62eff2"/>
+    </g>
+   </svg>
+   <div class="speech">“Let's learn what transcriptionists do and why accuracy matters.”</div>
+  </div>
+ </div>
+</section>
+
+<!-- 3 DEFINITION -->
+<section class="slide" data-title="Definition" data-speech="Medical transcription is the process of listening to audio recordings dictated by healthcare professionals and converting them into accurate written documents. These documents include patient histories, diagnostic reports, operative notes, and discharge summaries.">
+ <div class="layout">
+  <div>
+   <div class="kicker">02 · Definition</div>
+   <h2>What is <span class="gradient">Medical Transcription?</span></h2>
+   <p>Medical transcription is the process of <strong>listening to audio recordings dictated by healthcare professionals</strong> and converting them into accurate written documents.</p>
+   <div class="panel">
+    <h3>Examples of written documents</h3>
+    <ul>
+     <li>Patient histories</li>
+     <li>Diagnostic reports</li>
+     <li>Operative notes</li>
+     <li>Discharge summaries</li>
+    </ul>
+   </div>
+  </div>
+  <div class="scene" data-character="doctor">
+   <span class="floaticon f1">🎙️</span><span class="floaticon f2">📄</span><span class="floaticon f3">〰️</span>
+   <svg class="person" viewBox="0 0 320 300" role="img" aria-label="Doctor dictating a medical report">
+    <ellipse cx="160" cy="267" rx="85" ry="11" fill="#030b19" opacity=".5"/>
+    <g class="bodymove">
+     <path d="M96 272 L105 185 Q122 158 160 158 Q198 158 215 185 L224 272Z" fill="#f4f8ff"/>
+     <path d="M140 164 L160 187 L180 164 L172 218 L148 218Z" fill="#55dce4"/>
+     <path d="M106 194 L84 230 L101 241 L126 205" fill="#e1edfa"/>
+     <path d="M214 194 L235 227 L219 241 L194 205" fill="#e1edfa"/>
+     <rect x="141" y="221" width="38" height="30" rx="5" fill="#1d4574"/>
+     <path d="M150 230 L170 230 M150 237 L170 237" stroke="#6df3ed" stroke-width="2"/>
+    </g>
+    <g class="headmove">
+     <ellipse cx="160" cy="105" rx="35" ry="43" fill="#d8a07a"/>
+     <path d="M125 94 Q122 58 160 55 Q199 58 195 93 L182 78 Q157 86 128 81Z" fill="#48362d"/>
+     <g class="eye"><ellipse cx="147" cy="105" rx="3" ry="4" fill="#182642"/><ellipse cx="173" cy="105" rx="3" ry="4" fill="#182642"/></g>
+     <path d="M152 124 Q160 130 168 124" stroke="#9a5548" stroke-width="2" fill="none"/>
+     <path class="mouth" d="M151 133 Q160 137 169 133 Q160 147 151 133" fill="#7e303b"/>
+     <path d="M123 99 Q112 86 116 112 L126 122" fill="none" stroke="#65e9f2" stroke-width="5" stroke-linecap="round"/>
+     <path d="M116 112 L103 121 L118 126" fill="none" stroke="#65e9f2" stroke-width="4"/>
+    </g>
+    <rect x="219" y="99" width="65" height="83" rx="7" fill="#eff7ff" stroke="#65e9f2" stroke-width="2"/>
+    <path d="M230 115 L270 115 M230 127 L270 127 M230 139 L262 139 M230 151 L269 151 M230 163 L256 163" stroke="#3975a8" stroke-width="3" stroke-linecap="round"/>
+    <path d="M213 140 Q206 140 206 150 L206 168" stroke="#66e9f1" stroke-width="4" fill="none" stroke-linecap="round"/>
+   </svg>
+   <div class="speech">“The spoken report becomes a written medical record.”</div>
+  </div>
+ </div>
+</section>
+
+<!-- 4 SCOPE -->
+<section class="slide" data-title="Scope of Work" data-speech="The scope of medical transcription includes healthcare documentation, support for physicians, integration with technology such as electronic health records, and career opportunities in hospitals, clinics, outsourcing companies, and freelance transcription.">
+ <div class="layout">
+  <div>
+   <div class="kicker">03 · Scope of Work</div>
+   <h2>Scope of Medical Transcription</h2>
+   <div class="cardgrid">
+    <div class="mini"><span class="emoji">📋</span><strong>Healthcare Documentation</strong><p>Ensures patient records are complete and accessible.</p></div>
+    <div class="mini"><span class="emoji">🩺</span><strong>Support for Physicians</strong><p>Saves time so doctors can focus on patient care.</p></div>
+    <div class="mini"><span class="emoji">💻</span><strong>Technology</strong><p>Works with speech recognition and electronic health records (EHR).</p></div>
+    <div class="mini"><span class="emoji">🌐</span><strong>Career Opportunities</strong><p>Hospitals, clinics, outsourcing companies, and freelance work.</p></div>
+   </div>
+  </div>
+  <div class="scene" data-character="transcriptionist">
+   <span class="floaticon f1">💻</span><span class="floaticon f2">🩺</span><span class="floaticon f3">📑</span>
+   <svg class="person" viewBox="0 0 320 300" role="img" aria-label="Medical transcriptionist typing a report">
+    <ellipse cx="160" cy="268" rx="100" ry="12" fill="#030b19" opacity=".5"/>
+    <g class="bodymove">
+     <path d="M94 272 L104 186 Q119 158 160 158 Q201 158 216 186 L226 272Z" fill="#f4f8ff"/>
+     <path d="M140 164 L160 185 L180 164 L172 218 L148 218Z" fill="#58e8e5"/>
+     <path d="M104 194 L80 233 L98 244 L125 207" fill="#e1edfa"/>
+     <path d="M216 194 L239 232 L220 245 L194 207" fill="#e1edfa"/>
+     <path d="M115 238 L143 232 L149 249 L123 259Z" fill="#d9a078"/>
+     <path d="M205 238 L177 232 L171 249 L197 259Z" fill="#d9a078"/>
+    </g>
+    <g class="headmove">
+     <ellipse cx="160" cy="104" rx="35" ry="42" fill="#d5a079"/>
+     <path d="M125 94 Q122 58 160 55 Q198 58 195 93 L182 77 Q158 87 128 81Z" fill="#2e2440"/>
+     <g class="eye"><ellipse cx="147" cy="104" rx="3" ry="4" fill="#182642"/><ellipse cx="173" cy="104" rx="3" ry="4" fill="#182642"/></g>
+     <path d="M152 124 Q160 130 168 124" stroke="#9a5548" stroke-width="2" fill="none"/>
+     <path class="mouth" d="M151 133 Q160 137 169 133 Q160 147 151 133" fill="#7e303b"/>
+     <path d="M124 100 Q111 87 116 112 L126 121" fill="none" stroke="#64f0ee" stroke-width="5" stroke-linecap="round"/>
+     <path d="M116 112 L103 120 L118 127" fill="none" stroke="#64f0ee" stroke-width="4"/>
+    </g>
+    <rect x="65" y="211" width="190" height="51" rx="7" fill="#102d51" stroke="#64e7f2" stroke-width="2"/>
+    <rect x="77" y="218" width="166" height="28" rx="4" fill="#07182f"/>
+    <path d="M84 226 L237 226 M84 234 L221 234 M84 242 L229 242" stroke="#52e8e7" stroke-width="2" stroke-linecap="round" stroke-dasharray="12 5"/>
+    <path d="M125 262 L117 276 L203 276 L195 262" fill="#8fb7d8"/>
+   </svg>
+   <div class="speech">“I listen, type, review, and prepare reports.”</div>
+  </div>
+ </div>
+</section>
+
+<!-- 5 ROLE -->
+<section class="slide" data-title="Role in Healthcare" data-speech="Medical transcription supports healthcare in four important ways. Accuracy is critical for diagnosis and treatment. Communication creates a written record shared across care teams. Records can serve as legal and insurance evidence. Clear documentation also supports patient safety.">
+ <div class="layout">
+  <div>
+   <div class="kicker">04 · Role in Healthcare</div>
+   <h2>Why does it matter?</h2>
+   <div class="panel">
+    <p>✓ <strong>Accuracy:</strong> Critical for diagnosis, treatment, and continuity of care.</p>
+    <p>✓ <strong>Communication:</strong> Provides written records that can be shared across healthcare teams.</p>
+    <p>✓ <strong>Legal Evidence:</strong> Medical records serve as official documents in legal and insurance cases.</p>
+    <p>✓ <strong>Patient Safety:</strong> Clear documentation helps prevent errors involving medications, procedures, and instructions.</p>
+   </div>
+  </div>
+  <div class="scene" data-character="nurse">
+   <span class="floaticon f1">🛡️</span><span class="floaticon f2">📋</span><span class="floaticon f3">✓</span>
+   <svg class="person" viewBox="0 0 320 300" role="img" aria-label="Healthcare professional checking a medical record">
+    <ellipse cx="160" cy="269" rx="87" ry="12" fill="#030b19" opacity=".5"/>
+    <g class="bodymove">
+     <path d="M94 272 L104 186 Q120 158 160 158 Q200 158 216 186 L226 272Z" fill="#f4f8ff"/>
+     <path d="M140 164 L160 185 L180 164 L172 218 L148 218Z" fill="#59e8e7"/>
+     <path d="M104 194 L83 232 L99 244 L125 207" fill="#e1edfa"/>
+     <path d="M216 194 L239 232 L220 245 L194 207" fill="#e1edfa"/>
+     <rect x="127" y="222" width="66" height="43" rx="5" fill="#183b68"/>
+     <path d="M138 233 L180 233 M138 242 L174 242 M138 251 L179 251" stroke="#61e7e9" stroke-width="3"/>
+    </g>
+    <g class="headmove">
+     <ellipse cx="160" cy="104" rx="35" ry="42" fill="#d5a079"/>
+     <path d="M125 94 Q122 58 160 55 Q198 58 195 93 L182 77 Q158 87 128 81Z" fill="#48352c"/>
+     <g class="eye"><ellipse cx="147" cy="104" rx="3" ry="4" fill="#182642"/><ellipse cx="173" cy="104" rx="3" ry="4" fill="#182642"/></g>
+     <path d="M152 124 Q160 130 168 124" stroke="#9a5548" stroke-width="2" fill="none"/>
+     <path class="mouth" d="M151 133 Q160 137 169 133 Q160 147 151 133" fill="#7e303b"/>
+     <path d="M129 76 Q160 50 191 76" fill="none" stroke="#68f5f0" stroke-width="5" stroke-linecap="round"/>
+     <rect x="154" y="44" width="12" height="22" rx="4" fill="#68f5f0"/>
+    </g>
+   </svg>
+   <div class="speech">“Accurate records help healthcare teams make informed decisions.”</div>
+  </div>
+ </div>
+</section>
+
+<!-- 6 CASE STUDY -->
+<section class="slide" data-title="Case Study" data-speech="Consider this case. A physician dictates a patient's medication dosage. The transcriptionist hears fifteen milligrams but mistakenly types fifty milligrams. The incorrect record could lead to patient harm.">
+ <div class="layout">
+  <div>
+   <div class="kicker">05 · Case Study</div>
+   <h2>Importance of Accurate Records</h2>
+   <div class="panel">
+    <span class="tag">Scenario</span>
+    <p class="casequote">A physician dictates a patient's medication dosage.</p>
+    <div class="mini" style="margin-top:14px">
+     <p>🎙️ Physician's intended dosage</p>
+     <h2 style="color:#56f0d4;margin:4px 0">15 mg</h2>
+    </div>
+    <div class="mini" style="margin-top:10px;border-color:#ff819766">
+     <p>⌨️ Transcription error</p>
+     <h2 style="color:#ff9aab;margin:4px 0">50 mg</h2>
+    </div>
+    <p><strong>Error:</strong> The transcriptionist mishears “15 mg” as “50 mg.”</p>
+    <p><strong>Impact:</strong> The patient may receive an incorrect dosage, creating a risk of harm.</p>
+   </div>
+  </div>
+  <div class="scene" data-character="doctor">
+   <span class="floaticon f1">🎙️</span><span class="floaticon f2">⚠️</span><span class="floaticon f3">💊</span>
+   <svg class="person" viewBox="0 0 320 300" role="img" aria-label="Doctor reviewing a medication record">
+    <ellipse cx="160" cy="268" rx="85" ry="12" fill="#030b19" opacity=".5"/>
+    <g class="bodymove">
+     <path d="M95 272 L105 186 Q121 158 160 158 Q199 158 215 186 L225 272Z" fill="#f3f8ff"/>
+     <path d="M140 164 L160 185 L180 164 L172 218 L148 218Z" fill="#58e8e5"/>
+     <path d="M105 194 L84 232 L100 243 L126 207" fill="#e1edfa"/>
+     <path d="M215 194 L237 232 L220 245 L194 207" fill="#e1edfa"/>
+    </g>
+    <g class="headmove">
+     <ellipse cx="160" cy="104" rx="35" ry="42" fill="#d7a07a"/>
+     <path d="M125 94 Q122 58 160 55 Q198 58 195 93 L182 77 Q158 87 128 81Z" fill="#47352b"/>
+     <g class="eye"><ellipse cx="147" cy="104" rx="3" ry="4" fill="#182642"/><ellipse cx="173" cy="104" rx="3" ry="4" fill="#182642"/></g>
+     <path d="M152 124 Q160 130 168 124" stroke="#9a5548" stroke-width="2" fill="none"/>
+     <path class="mouth" d="M151 133 Q160 137 169 133 Q160 147 151 133" fill="#7e303b"/>
+    </g>
+    <rect x="210" y="112" width="78" height="98" rx="8" fill="#f2f7ff" stroke="#ff8ca5" stroke-width="2"/>
+    <text x="249" y="137" text-anchor="middle" font-size="10" fill="#17345a" font-weight="bold">DOSAGE</text>
+    <text x="249" y="162" text-anchor="middle" font-size="19" fill="#c83754" font-weight="bold">50 mg</text>
+    <path d="M223 177 L276 177" stroke="#d3deed" stroke-width="3"/>
+    <path d="M223 187 L268 187" stroke="#d3deed" stroke-width="3"/>
+    <circle cx="276" cy="195" r="12" fill="#ff7d98"/>
+    <path d="M271 190 L281 200 M281 190 L271 200" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+   </svg>
+   <div class="speech">“One wrong number can change the meaning of a medical record.”</div>
+  </div>
+ </div>
+</section>
+
+<!-- 7 CASE ANALYSIS -->
+<section class="slide" data-title="Case Analysis" data-speech="The lesson is that transcription accuracy directly affects patient safety and treatment outcomes. A transcriptionist should never guess unclear information. The correct action is to review the source recording and follow the appropriate verification procedure before the record is finalized.">
+ <div class="layout">
+  <div>
+   <div class="kicker">06 · Case Analysis</div>
+   <h2>What should happen next?</h2>
+   <div class="panel">
+    <h3>Identify the problem</h3>
+    <p>The recorded dosage and written dosage do not match.</p>
+    <h3 style="margin-top:18px">Correct action</h3>
+    <ul>
+     <li>Review the original audio recording.</li>
+     <li>Verify unclear information using the approved procedure.</li>
+     <li>Correct the transcript before finalizing it.</li>
+     <li>Never guess a medication dosage.</li>
+    </ul>
+   </div>
+   <p><strong>Key lesson:</strong> Accuracy protects patient safety and treatment outcomes.</p>
+  </div>
+  <div class="scene" data-character="transcriptionist">
+   <span class="floaticon f1">🔍</span><span class="floaticon f2">✓</span><span class="floaticon f3">🛡️</span>
+   <svg class="person" viewBox="0 0 320 300" role="img" aria-label="Transcriptionist carefully checking a medical document">
+    <ellipse cx="160" cy="268" rx="95" ry="12" fill="#030b19" opacity=".5"/>
+    <g class="bodymove">
+     <path d="M95 272 L105 186 Q121 158 160 158 Q199 158 215 186 L225 272Z" fill="#f3f8ff"/>
+     <path d="M140 164 L160 185 L180 164 L172 218 L148 218Z" fill="#58e8e5"/>
+     <path d="M105 194 L84 232 L100 243 L126 207" fill="#e1edfa"/>
+     <path d="M215 194 L237 232 L220 245 L194 207" fill="#e1edfa"/>
+    </g>
+    <g class="headmove">
+     <ellipse cx="160" cy="104" rx="35" ry="42" fill="#d7a07a"/>
+     <path d="M125 94 Q122 58 160 55 Q198 58 195 93 L182 77 Q158 87 128 81Z" fill="#30243c"/>
+     <g class="eye"><ellipse cx="147" cy="104" rx="3" ry="4" fill="#182642"/><ellipse cx="173" cy="104" rx="3" ry="4" fill="#182642"/></g>
+     <path d="M152 124 Q160 130 168 124" stroke="#9a5548" stroke-width="2" fill="none"/>
+     <path class="mouth" d="M151 133 Q160 137 169 133 Q160 147 151 133" fill="#7e303b"/>
+     <path d="M124 100 Q111 87 116 112 L126 121" fill="none" stroke="#64f0ee" stroke-width="5" stroke-linecap="round"/>
+    </g>
+    <rect x="210" y="118" width="78" height="90" rx="7" fill="#f3f8ff" stroke="#64e7f2" stroke-width="2"/>
+    <path d="M221 135 L276 135 M221 147 L276 147 M221 159 L264 159" stroke="#3d6b99" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="261" cy="181" r="15" fill="none" stroke="#4adfbd" stroke-width="4"/>
+    <path d="M252 181 L259 188 L271 173" fill="none" stroke="#2aa985" stroke-width="4" stroke-linecap="round"/>
+   </svg>
+   <div class="speech">“When something is unclear, verify it instead of guessing.”</div>
+  </div>
+ </div>
+</section>
+
+<!-- 8 QUICK REVIEW -->
+<section class="slide" data-title="Quick Review" data-speech="Let's check your understanding. Answer the questions by selecting an option. Remember that accurate medical documentation supports communication, patient safety, and continuity of care.">
+ <div class="layout">
+  <div>
+   <div class="kicker">07 · Quick Review</div>
+   <h2>Test your understanding</h2>
+   <p>Choose the best answer for each question.</p>
+   <div class="panel quiz" id="quiz">
+    <div class="quizquestion" data-answer="1">
+     <h3>1. What is medical transcription?</h3>
+     <button class="choice" data-i="0">A. Prescribing medication</button>
+     <button class="choice" data-i="1">B. Converting dictated medical information into written documents</button>
+     <button class="choice" data-i="2">C. Performing surgery</button>
+     <div class="feedback"></div>
+    </div>
+    <div class="quizquestion" data-answer="2" style="margin-top:20px">
+     <h3>2. Why is accuracy important?</h3>
+     <button class="choice" data-i="0">A. It makes every report shorter</button>
+     <button class="choice" data-i="1">B. It removes the need for doctors</button>
+     <button class="choice" data-i="2">C. It helps prevent documentation errors that may harm patients</button>
+     <div class="feedback"></div>
+    </div>
+    <button class="tool" style="margin-top:12px" onclick="resetQuiz()">↻ Try again</button>
+   </div>
+  </div>
+  <div class="scene" data-character="nurse">
+   <span class="floaticon f1">❓</span><span class="floaticon f2">🧠</span><span class="floaticon f3">✓</span>
+   <svg class="person" viewBox="0 0 320 300" role="img" aria-label="Healthcare worker encouraging students to answer review questions">
+    <ellipse cx="160" cy="269" rx="87" ry="12" fill="#030b19" opacity=".5"/>
+    <g class="bodymove">
+     <path d="M94 272 L104 186 Q120 158 160 158 Q200 158 216 186 L226 272Z" fill="#f4f8ff"/>
+     <path d="M140 164 L160 185 L180 164 L172 218 L148 218Z" fill="#59e8e7"/>
+     <path d="M104 194 L83 232 L99 244 L125 207" fill="#e1edfa"/>
+     <path d="M216 194 L239 232 L220 245 L194 207" fill="#e1edfa"/>
+     <path d="M112 229 L146 235 L143 249 L113 244Z" fill="#d8a07a"/>
+    </g>
+    <g class="headmove">
+     <ellipse cx="160" cy="104" rx="35" ry="42" fill="#d5a079"/>
+     <path d="M125 94 Q122 58 160 55 Q198 58 195 93 L182 77 Q158 87 128 81Z" fill="#48352c"/>
+     <g class="eye"><ellipse cx="147" cy="104" rx="3" ry="4" fill="#182642"/><ellipse cx="173" cy="104" rx="3" ry="4" fill="#182642"/></g>
+     <path d="M151 123 Q160 135 169 123" stroke="#9a5548" stroke-width="2" fill="none"/>
+     <path class="mouth" d="M151 133 Q160 137 169 133 Q160 147 151 133" fill="#7e303b"/>
+     <path d="M129 76 Q160 50 191 76" fill="none" stroke="#68f5f0" stroke-width="5" stroke-linecap="round"/>
+     <rect x="154" y="44" width="12" height="22" rx="4" fill="#68f5f0"/>
+    </g>
+   </svg>
+   <div class="speech">“Think about how one error can affect a patient.”</div>
+  </div>
+ </div>
+</section>
+
+<!-- 9 TEACHING ACTIVITY -->
+<section class="slide" data-title="Teaching Activity" data-speech="For the teaching activity, listen to the short classroom dictation. Transcribe what you hear, then reveal the sample transcript and compare it with your work. Check the medication dosage and other details carefully.">
+ <div class="layout">
+  <div>
+   <div class="kicker">08 · Final Slide</div>
+   <h2>Teaching Activity: <span class="gradient">Listen & Transcribe</span></h2>
+   <p>Listen to the sample dictation. Type what you hear, then compare your transcript with the sample answer.</p>
+   <div class="panel">
+    <h3>🎙️ Classroom dictation</h3>
+    <p>“The patient reports a mild headache since yesterday. The patient was advised to rest and drink enough water. Follow-up is recommended if the symptoms continue.”</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0">
+     <button class="tool" onclick="playDictation()">▶ Play Dictation</button>
+     <button class="tool" onclick="stopVoice()">■ Stop Audio</button>
+     <button class="tool" onclick="toggleAnswer()">👁 Show / Hide Answer</button>
+    </div>
+    <label for="transcript"><strong>Your transcript</strong></label>
+    <textarea id="transcript" placeholder="Type the dictation here..."></textarea>
+    <div id="sampleAnswer" class="answer">
+     <strong>Sample transcript</strong>
+     <p>The patient reports a mild headache since yesterday. The patient was advised to rest and drink enough water. Follow-up is recommended if the symptoms continue.</p>
+     <p class="smallnote">Compare wording, punctuation, and completeness. This is a fictional classroom example, not an actual patient record.</p>
+    </div>
+    <button class="tool" style="margin-top:10px" onclick="checkTranscript()">✓ Check My Work</button>
+    <div id="transcriptFeedback" class="feedback" aria-live="polite"></div>
+   </div>
+  </div>
+  <div class="scene" data-character="transcriptionist">
+   <span class="floaticon f1">🎧</span><span class="floaticon f2">⌨️</span><span class="floaticon f3">📄</span>
+   <svg class="person" viewBox="0 0 320 300" role="img" aria-label="Transcriptionist listening and typing">
+    <ellipse cx="160" cy="268" rx="95" ry="12" fill="#030b19" opacity=".5"/>
+    <g class="bodymove">
+     <path d="M95 272 L105 186 Q121 158 160 158 Q199 158 215 186 L225 272Z" fill="#f3f8ff"/>
+     <path d="M140 164 L160 185 L180 164 L172 218 L148 218Z" fill="#58e8e5"/>
+     <path d="M105 194 L84 232 L100 243 L126 207" fill="#e1edfa"/>
+     <path d="M215 194 L237 232 L220 245 L194 207" fill="#e1edfa"/>
+    </g>
+    <g class="headmove">
+     <ellipse cx="160" cy="104" rx="35" ry="42" fill="#d7a07a"/>
+     <path d="M125 94 Q122 58 160 55 Q198 58 195 93 L182 77 Q158 87 128 81Z" fill="#30243c"/>
+     <g class="eye"><ellipse cx="147" cy="104" rx="3" ry="4" fill="#182642"/><ellipse cx="173" cy="104" rx="3" ry="4" fill="#182642"/></g>
+     <path d="M152 124 Q160 130 168 124" stroke="#9a5548" stroke-width="2" fill="none"/>
+     <path class="mouth" d="M151 133 Q160 137 169 133 Q160 147 151 133" fill="#7e303b"/>
+     <path d="M124 100 Q111 87 116 112 L126 121" fill="none" stroke="#64f0ee" stroke-width="5" stroke-linecap="round"/>
+    </g>
+    <rect x="65" y="211" width="190" height="51" rx="7" fill="#102d51" stroke="#64e7f2" stroke-width="2"/>
+    <rect x="77" y="218" width="166" height="28" rx="4" fill="#07182f"/>
+    <path d="M84 226 L237 226 M84 234 L221 234 M84 242 L229 242" stroke="#52e8e7" stroke-width="2" stroke-linecap="round" stroke-dasharray="12 5"/>
+    <path d="M125 262 L117 276 L203 276 L195 262" fill="#8fb7d8"/>
+   </svg>
+   <div class="speech">“Listen carefully. Type accurately. Review before submitting.”</div>
+  </div>
+ </div>
+</section>
+
+</main>
+
+<footer class="footer">
+ <div class="smallnote">MEDICAL TRANSCRIPTION · LEARNING STUDIO</div>
+ <div class="navcenter">
+  <button class="navbtn" onclick="changeSlide(-1)" aria-label="Previous slide">← Previous</button>
+  <span id="counter">1 / 9</span>
+  <button class="navbtn" onclick="changeSlide(1)" aria-label="Next slide">Next →</button>
+ </div>
+ <button class="navbtn" onclick="exitPresentation()">Exit Presentation</button>
+</footer>
+
+<script>
+const slides = [...document.querySelectorAll(".slide")];
+let current = 0;
+let voiceOn = true;
+let muted = true;
+let speechActive = false;
+let speechUtterance = null;
+let previousScene = null;
+
+function showSlide(index) {
+  index = Math.max(0, Math.min(slides.length - 1, index));
+  stopVoice();
+  if (previousScene) previousScene.classList.add("silent");
+  current = index;
+  slides.forEach((slide, i) => {
+    slide.classList.toggle("active", i === current);
+    const character = slide.querySelector(".person");
+    if (character) {
+      character.classList.add("silent");
+      if (i === current) previousScene = character;
+    }
+  });
+  document.getElementById("counter").textContent = `${current + 1} / ${slides.length}`;
+  document.getElementById("progress").style.width = `${((current + 1) / slides.length) * 100}%`;
+  if (voiceOn) setTimeout(() => narrateCurrent(), 450);
+}
+function changeSlide(amount) { showSlide(current + amount); }
+
+function narrateCurrent() {
+  if (!voiceOn || !("speechSynthesis" in window)) return;
+  stopVoice();
+  const text = slides[current].dataset.speech;
+  if (!text) return;
+  speechUtterance = new SpeechSynthesisUtterance(text);
+  speechUtterance.rate = 0.92;
+  speechUtterance.pitch = 1;
+  speechUtterance.onstart = () => setCharacterSpeaking(true);
+  speechUtterance.onend = () => setCharacterSpeaking(false);
+  speechUtterance.onerror = () => setCharacterSpeaking(false);
+  window.speechSynthesis.speak(speechUtterance);
+}
+function setCharacterSpeaking(active) {
+  speechActive = active;
+  const person = slides[current].querySelector(".person");
+  if (person) person.classList.toggle("silent", !active);
+}
+function stopVoice() {
+  if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+  speechActive = false;
+  document.querySelectorAll(".person").forEach(p => p.classList.add("silent"));
+}
+function toggleVoice() {
+  voiceOn = !voiceOn;
+  document.getElementById("voiceBtn").textContent = voiceOn ? "🔊 Voice: On" : "🔇 Voice: Off";
+  if (voiceOn) narrateCurrent(); else stopVoice();
+}
+function playDictation() {
+  if (!("speechSynthesis" in window)) {
+    alert("Speech playback is not supported in this browser.");
+    return;
+  }
+  stopVoice();
+  const text = "The patient reports a mild headache since yesterday. The patient was advised to rest and drink enough water. Follow-up is recommended if the symptoms continue.";
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.rate = 0.78;
+  utterance.onstart = () => setCharacterSpeaking(true);
+  utterance.onend = () => setCharacterSpeaking(false);
+  utterance.onerror = () => setCharacterSpeaking(false);
+  window.speechSynthesis.speak(utterance);
+}
+function toggleXray() {
+  document.body.classList.toggle("xray");
+}
+function toggleMute() {
+  muted = !muted;
+  document.getElementById("muteBtn").textContent = muted ? "🔕 Sound: Muted" : "🔔 Sound: On";
+}
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen?.().catch(() => {});
+  } else {
+    document.exitFullscreen?.();
+  }
+}
+document.addEventListener("fullscreenchange", () => {
+  document.getElementById("fullBtn").textContent =
+    document.fullscreenElement ? "⛶ Exit Fullscreen" : "⛶ Fullscreen";
+});
+function exitPresentation() {
+  stopVoice();
+  if (document.fullscreenElement) document.exitFullscreen?.();
+  showSlide(0);
+}
+document.addEventListener("keydown", e => {
+  if (["TEXTAREA","INPUT"].includes(document.activeElement.tagName)) return;
+  if (["ArrowRight","PageDown"," "].includes(e.key)) {
+    e.preventDefault(); changeSlide(1);
+  } else if (["ArrowLeft","PageUp"].includes(e.key)) {
+    e.preventDefault(); changeSlide(-1);
+  } else if (e.key === "Home") {
+    e.preventDefault(); showSlide(0);
+  } else if (e.key === "End") {
+    e.preventDefault(); showSlide(slides.length - 1);
+  } else if (e.key.toLowerCase() === "x") {
+    toggleXray();
+  } else if (e.key === "Escape" && !document.fullscreenElement) {
+    // Escape leaves the current slide unchanged.
+  }
+});
+
+document.querySelectorAll(".quizquestion").forEach(question => {
+  question.querySelectorAll(".choice").forEach(button => {
+    button.addEventListener("click", () => {
+      question.querySelectorAll(".choice").forEach(b => b.classList.remove("correct","wrong"));
+      const correct = Number(button.dataset.i) === Number(question.dataset.answer);
+      button.classList.add(correct ? "correct" : "wrong");
+      question.querySelector(".feedback").textContent = correct
+        ? "Correct! Well done."
+        : "Not quite. Try again.";
+    });
+  });
+});
+function resetQuiz() {
+  document.querySelectorAll(".quizquestion").forEach(question => {
+    question.querySelectorAll(".choice").forEach(b => b.classList.remove("correct","wrong"));
+    question.querySelector(".feedback").textContent = "";
+  });
+}
+function toggleAnswer() {
+  document.getElementById("sampleAnswer").classList.toggle("show");
+}
+function checkTranscript() {
+  const typed = document.getElementById("transcript").value.trim();
+  const expected = "The patient reports a mild headache since yesterday. The patient was advised to rest and drink enough water. Follow-up is recommended if the symptoms continue.";
+  const normalize = text => text.toLowerCase().replace(/[.,;:!?]/g, "").replace(/\s+/g, " ").trim();
+  const feedback = document.getElementById("transcriptFeedback");
+  if (!typed) {
+    feedback.textContent = "Type your transcript first, then check your work.";
+    return;
+  }
+  if (normalize(typed) === normalize(expected)) {
+    feedback.textContent = "Excellent! Your transcript matches the sample.";
+  } else {
+    const words = normalize(expected).split(" ");
+    const typedWords = normalize(typed).split(" ");
+    let matches = 0;
+    words.forEach((word, i) => { if (typedWords[i] === word) matches++; });
+    const score = Math.round(matches / words.length * 100);
+    feedback.textContent = `Approximate word-order match: ${score}%. Reveal the sample answer to check missing words, spelling, and punctuation.`;
+  }
+}
+showSlide(0);
+</script>
+</body>
+</html>
